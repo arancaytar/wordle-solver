@@ -9,3 +9,7 @@ A near-optimal solution can be achieved by maximizing the Shannon entropy of the
 
 1. In default (interactive) mode, it will print the optimal guess and read the answer from user input, continuing until it finds the correct answer.
 2. When given an argument, it will simulate the game with the given solution.
+
+## Usage
+
+    ./main.py [<solution>]
