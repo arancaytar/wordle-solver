@@ -2,6 +2,8 @@ import random
 from collections import defaultdict, Counter
 from math import log
 import typing
+from typing import Dict
+
 
 def check_guess(guess: str, solution: str):
     answer = [0] * len(solution)
@@ -47,48 +49,79 @@ def reduce(candidates, guess):
         tree[check_guess(guess, solution)].append(solution)
     return tree
 
-
-def maximize_entropy(solutions, guesses=None):
+def optimize(solutions, guesses=None, method='max_entropy'):
     # With at most possibilities, brute-force is optimal.
     if len(solutions) <= 2:
         return solutions[0]
 
-    max_entropy = Opt(max=True)
+    if method == 'max_entropy':
+        optimal = Opt(max=True)
+    else:
+        optimal = Opt()
+
     for guess in guesses or solutions:
         tree = Counter({x: len(y) for x, y in reduce(solutions, guess).items()})
-        max_entropy.check(guess, entropy(tree.values()))
+        match method:
+            case 'min_max_pool':
+                score = max(tree.values())
+            case 'min_avg_pool':
+                score = sum(tree.values()) / len(tree.values())
+            case 'max_entropy':
+                score = entropy(tree.values())
+            case _:
+                score = entropy(tree.values())
+        optimal.check(guess, score)
     if guesses:
-        best = set(guesses) & max_entropy.key
+        best = set(guesses) & optimal.key
         if best:
             return sorted(best)[0]
-    print(max_entropy)
-    return sorted(max_entropy.key)[0]
+    print(optimal)
+    return sorted(optimal.key)[0]
+
 
 class Solver:
-    def __init__(self):
+
+    def __init__(self, method='max_entropy'):
         self.words = open('words.txt').read().strip().split("\n")
-        pairs = (tuple(line.split()[:2]) for line in open('lookup-1.txt').read().strip().split("\n"))
-        self.lookup = dict((x, y) for x, y in pairs)
+        self.method = method
+        self.first = self.second = None
+        try:
+            lines = open(f"lookup.{method}.txt").read().strip().split("\n")
+            self.first = lines[0]
+            pairs = (tuple(line.split()[:2]) for line in lines[1:])
+            self.second = dict((x, y) for x, y in pairs)
+        except FileNotFoundError as e:
+            print(e)
+            print("Warning: Lookup index not found. Solver will run very slowly.")
+
+    def optimize(self, solutions):
+        return optimize(solutions, self.words, self.method)
 
     def solve(self, solution: str = None):
         guesses = []
         read_answer = (
-            (lambda guess: check_guess(guess, solution)) if solution
-            else (lambda guess: tuple(map(int, input(f"{guess}: ").strip())))
+            (lambda g: check_guess(g, solution)) if solution
+            else (lambda g: tuple(map(int, input(f"{g}: ").strip())))
         )
-        guess = 'tares'  # first guess.
-        guesses.append(guess)
-        reduced = reduce(self.words, guess)
-        answer = read_answer(guess)
 
-        if set(answer) == {2}:
-            return guesses  # solved in one guess
+        solutions = self.words
 
-        solutions = reduced[answer]
-        if not solutions:
-            raise ValueError("Answers not consistent with any word in the list.")
-        # use a lookup table for the second guess (much faster, and only requires 243 entries)
-        guess = self.lookup["".join(map(str, answer))]
+        if self.first and self.second:
+            guess = self.first
+            guesses.append(guess)
+            reduced = reduce(solutions, guess)
+            answer = read_answer(guess)
+
+            if set(answer) == {2} and guess in self.words:
+                return guesses  # solved in one guess
+            solutions = reduced[answer]
+            if not solutions:
+                raise ValueError("Answers not consistent with any word in the list.")
+            # use a lookup table for the second guess (much faster, and only requires 243 entries)
+            guess = self.second["".join(map(str, answer))]
+        else:
+            guess = self.optimize(solutions)
+
         guesses.append(guess)
         reduced = reduce(solutions, guess)
 
@@ -100,12 +133,11 @@ class Solver:
             solutions = reduced[answer]
             if not solutions:
                 raise ValueError("Answers not consistent with any word in the list.")
-            #print(f"{solutions[:5]} and {max(0, len(solutions) - 5)} others")
 
-            guess = maximize_entropy(solutions, self.words)
+            guess = self.optimize(solutions)
             guesses.append(guess)
             reduced = reduce(solutions, guess)
 
-            if len(solutions) <= 1 and solution: # only one possibility left, stop
+            if len(solutions) <= 1 and solution:  # only one possibility left, stop
                 return guesses
 
