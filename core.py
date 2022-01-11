@@ -19,7 +19,7 @@ def check_guess(guess: str, solution: str):
     for character, positions in g.items():
         for position in positions[:s[character]]:
             answer[position] = 1
-    return tuple(answer)
+    return "".join(map(str, answer))
 
 class Opt:
     def __init__(self, max=False):
@@ -97,37 +97,50 @@ class Solver:
     def optimize(self, solutions):
         return optimize(solutions, self.words, self.method)
 
+    def read_answer(self, guess, solution):
+        if solution:
+            return check_guess(guess, solution), guess
+        answer = input(f"{guess}: ").strip()
+        match len(answer):
+            case 5:
+                return answer, guess
+            case 10:
+                return answer[5:], answer[:5]
+            case _:
+                raise ValueError("Answer must be 5 digits, or 5 letters and 5 digits.")
+
     def solve(self, solution: str = None):
         guesses = []
-        read_answer = (
-            (lambda g: check_guess(g, solution)) if solution
-            else (lambda g: tuple(map(int, input(f"{g}: ").strip())))
-        )
-
         solutions = self.words
 
-        if self.first and self.second:
+        guess = None
+
+        if self.first:
             guess = self.first
+            answer, guess = self.read_answer(guess, solution)
             guesses.append(guess)
             reduced = reduce(solutions, guess)
-            answer = read_answer(guess)
-
-            if set(answer) == {2} and guess in self.words:
+            if set(answer) == {"2"} and guess in self.words:
                 return guesses  # solved in one guess
             solutions = reduced[answer]
             if not solutions:
                 raise ValueError("Answers not consistent with any word in the list.")
-            # use a lookup table for the second guess (much faster, and only requires 243 entries)
-            guess = self.second["".join(map(str, answer))]
-        else:
+
+            if self.second and self.first == guess:
+                # use a lookup table for the second guess (much faster, and only requires 243 entries)
+                # but only use it if we kept the first guess.
+                guess = self.second[answer]
+            else:
+                guess = None
+
+        if guess is None:
             guess = self.optimize(solutions)
 
-        guesses.append(guess)
-        reduced = reduce(solutions, guess)
-
         while True:
-            answer = read_answer(guess)
-            if set(answer) == {2}:  # correct, stop
+            answer, guess = self.read_answer(guess, solution)
+            guesses.append(guess)
+            reduced = reduce(solutions, guess)
+            if set(answer) == {"2"}:  # correct, stop
                 return guesses
 
             solutions = reduced[answer]
@@ -135,9 +148,4 @@ class Solver:
                 raise ValueError("Answers not consistent with any word in the list.")
 
             guess = self.optimize(solutions)
-            guesses.append(guess)
-            reduced = reduce(solutions, guess)
-
-            if len(solutions) <= 1 and solution:  # only one possibility left, stop
-                return guesses
 

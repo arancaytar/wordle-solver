@@ -19,7 +19,8 @@ def main():
                 x = "".join(map(str, check_guess(guess, args.solution)))
                 print(f"{guess}: {x}")
         else:
-            print("2 = green, 1 = yellow, 0 = grey")
+            print("2 = green, 1 = yellow, 0 = grey, eg. 01020")
+            print("Manually override suggested guess, eg: 'guess01020'")
             solver.solve()
     except ValueError as e:
         print(e)
