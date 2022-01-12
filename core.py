@@ -78,26 +78,48 @@ def optimize(solutions, guesses=None, method='max_entropy'):
     print(optimal)
     return sorted(optimal.key)[0]
 
+def print_pool(solutions, size):
+    elements = f"{', '.join(solutions[:size])}"
+    if size >= len(solutions):
+        return f"{elements} remaining"
+    elif size:
+        return f"{elements} and {len(solutions)} others remaining"
+    else:
+        return f"{len(solutions)} remaining"
+
+
+def get_source(source):
+    def get_words(file):
+        return open(file).read().strip().split("\n")
+    try:
+        guesses = solutions = get_words(f"data/{source}.words.txt")
+    except FileNotFoundError:
+        guesses = get_words(f"data/{source}.guesses.txt")
+        solutions = get_words(f"data/{source}.solutions.txt")
+    return guesses, solutions
+
 
 class Solver:
-
-    def __init__(self, method='max_entropy'):
-        self.words = open('words.txt').read().strip().split("\n")
+    def __init__(self, source, method, skip_lookup=False):
+        self.guesses, self.solutions = get_source(source)
         self.method = method
         self.first = self.second = None
-        try:
-            lines = open(f"lookup.{method}.txt").read().strip().split("\n")
-            self.first = lines[0]
-            pairs = (tuple(line.split()[:2]) for line in lines[1:])
-            self.second = dict((x, y) for x, y in pairs)
-        except FileNotFoundError as e:
-            print(e)
-            print("Warning: Lookup index not found. Solver will run very slowly.")
+
+        if not skip_lookup:
+            try:
+                lines = open(f"lookup/{source}.{method}.txt").read().strip().split("\n")
+                self.first = lines[0]
+                pairs = (tuple(line.split()[:2]) for line in lines[1:])
+                self.second = dict((x, y) for x, y in pairs)
+            except FileNotFoundError as e:
+                print(e)
+                print("Warning: Lookup table not found. First two guesses will be slow.")
 
     def optimize(self, solutions):
-        return optimize(solutions, self.words, self.method)
+        return optimize(solutions, self.guesses, self.method)
 
-    def read_answer(self, guess, solution):
+    @staticmethod
+    def read_answer(guess, solution):
         if solution:
             return check_guess(guess, solution), guess
         answer = input(f"{guess}: ").strip()
@@ -109,23 +131,30 @@ class Solver:
             case _:
                 raise ValueError("Answer must be 5 digits, or 5 letters and 5 digits.")
 
-    def solve(self, solution: str = None):
+    def solve(self, solution: str = None, pool=-1):
         guesses = []
-        solutions = self.words
+        solutions = self.solutions
 
         guess = None
 
         if self.first:
             guess = self.first
             answer, guess = self.read_answer(guess, solution)
+            if guess != self.first:
+                print("Warning: Overriding first guess; discarding lookup table. Next guess is slow.")
             guesses.append(guess)
             reduced = reduce(solutions, guess)
-            if set(answer) == {"2"} and guess in self.words:
+            if set(answer) == {"2"} and guess in self.solutions:
                 return guesses  # solved in one guess
             solutions = reduced[answer]
             if not solutions:
                 raise ValueError("Answers not consistent with any word in the list.")
-
+            if pool >= 0:
+                p = print_pool(solutions, pool)
+                if solution:
+                    guesses[-1] = (guesses[-1], p)
+                else:
+                    print(p)
             if self.second and self.first == guess:
                 # use a lookup table for the second guess (much faster, and only requires 243 entries)
                 # but only use it if we kept the first guess.
@@ -146,6 +175,11 @@ class Solver:
             solutions = reduced[answer]
             if not solutions:
                 raise ValueError("Answers not consistent with any word in the list.")
-
+            if pool >= 0:
+                p = print_pool(solutions, pool)
+                if solution:
+                    guesses[-1] = (guesses[-1], p)
+                else:
+                    print(p)
             guess = self.optimize(solutions)
 
