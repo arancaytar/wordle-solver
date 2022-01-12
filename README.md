@@ -28,3 +28,6 @@ The following word lists are included in the repository:
 
 - **scowl**: A list of English five-letter words sourced from [SCOWL](http://wordlist.aspell.net/).
 - **hello-wordl**: The lists used by the [hello-wordl](http://foldr.moe/hello-wordl/) page maintained at https://github.com/lynn/hello-wordl.
+
+All lists included are five letters long, but custom lists can use any letter size. Note that the lookup table size grows exponentially (3^n)
+with the word length.

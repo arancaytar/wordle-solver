@@ -104,6 +104,7 @@ class Solver:
         self.guesses, self.solutions = get_source(source)
         self.method = method
         self.first = self.second = None
+        self.length = len(self.solutions[0])
 
         if not skip_lookup:
             try:
@@ -118,18 +119,16 @@ class Solver:
     def optimize(self, solutions):
         return optimize(solutions, self.guesses, self.method)
 
-    @staticmethod
-    def read_answer(guess, solution):
+    def read_answer(self, guess, solution):
         if solution:
             return check_guess(guess, solution), guess
         answer = input(f"{guess}: ").strip()
-        match len(answer):
-            case 5:
-                return answer, guess
-            case 10:
-                return answer[5:], answer[:5]
-            case _:
-                raise ValueError("Answer must be 5 digits, or 5 letters and 5 digits.")
+        if len(answer) == self.length:
+            return answer, guess
+        elif len(answer) == 2*self.length:
+            return answer[self.length:], answer[:self.length]
+        else:
+            raise ValueError("Answer must be {length} digits, or {length} letters and {length} digits.")
 
     def solve(self, solution: str = None, pool=-1):
         guesses = []
