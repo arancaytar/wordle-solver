@@ -134,7 +134,7 @@ class Solver:
         elif len(answer) == 2*self.length:
             return answer[self.length:], answer[:self.length]
         else:
-            raise ValueError(f"Answer must be {length} digits, or {length} letters and {length} digits.")
+            raise ValueError(f"Answer must be {self.length} digits, or {self.length} letters and {self.length} digits.")
 
     def solve(self, solution: str = None, pool=-1):
         guesses = []
