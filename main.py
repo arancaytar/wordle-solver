@@ -10,6 +10,7 @@ def output(s, format):
                 'c': 'wyg',
                 'n': '012',
                 'b': ['⬛️', '🟨', '🟩'],
+                'discord': [':white_large_square:', ':yellow_square:', ':green_square:']
     }[format]
     return "".join(format[int(i)] for i in s)
 
@@ -40,7 +41,8 @@ def main():
         if args.solution:
             pool = None
             for guess in solver.solve(args.solution, pool=args.pool):
-                if args.pool >= 0:
+                pool = ''
+                if type(guess) is tuple:
                     guess, pool = guess
                 x = "".join(map(str, check_guess(guess, args.solution)))
                 print(f"{guess}: {output(x, args.format)}")
