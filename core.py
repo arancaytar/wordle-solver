@@ -49,7 +49,7 @@ def reduce(candidates, guess):
         tree[check_guess(guess, solution)].append(solution)
     return tree
 
-def optimize(solutions, guesses=None, method='max_entropy'):
+def optimize(solutions, guesses, method='max_entropy'):
     # With at most possibilities, brute-force is optimal.
     if len(solutions) <= 2:
         return solutions[0]
@@ -59,7 +59,7 @@ def optimize(solutions, guesses=None, method='max_entropy'):
     else:
         optimal = Opt()
 
-    for guess in guesses or solutions:
+    for guess in guesses:
         tree = Counter({x: len(y) for x, y in reduce(solutions, guess).items()})
         match method:
             case 'min_max_pool':
@@ -100,7 +100,8 @@ def get_source(source):
 
 
 class Solver:
-    def __init__(self, source, method, skip_lookup=False):
+    def __init__(self, source, method, skip_lookup=False, randomize=True):
+        self.randomize = randomize
         self.guesses, self.solutions = get_source(source)
         self.method = method
         self.first = self.second = None
@@ -117,7 +118,12 @@ class Solver:
                 print("Warning: Lookup table not found. First two guesses will be slow.")
 
     def optimize(self, solutions):
-        return optimize(solutions, self.guesses, self.method)
+        candidates = self.guesses
+        if self.randomize and len(candidates) > 300:
+            candidates = random.sample(candidates, max(300, int(len(candidates) ** 0.5)))
+            if len(solutions) < 100:
+                candidates += solutions
+        return optimize(solutions, candidates, self.method)
 
     def read_answer(self, guess, solution):
         if solution:

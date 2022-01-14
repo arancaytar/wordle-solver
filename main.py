@@ -30,9 +30,12 @@ def main():
     parser.add_argument('--pool', type=int, metavar='N',
                         help='Show the remaining pool size (and first N elements)',
                         default=-1)
+    parser.add_argument('--randomize', action='store_const',
+                        help='Consider only a sample of candidates for the next guess',
+                        default=False, const=True)
     args = parser.parse_args()
 
-    solver = Solver(source=args.source, method=args.method)
+    solver = Solver(source=args.source, method=args.method, randomize=args.randomize)
     try:
         if args.solution:
             pool = None
