@@ -38,7 +38,7 @@ def main():
 
     methods = ('max_entropy', 'min_avg_pool', 'min_max_pool') if args.method == 'all' else [args.method]
     for method in methods:
-        solver = Solver(source=args.source, method=method, skip_lookup=True)
+        solver = Solver(source=args.source, method=method, skip_lookup=True, randomize=False)
         table = build_table(solver)
         open(f"lookup/{args.source}.{method}.txt", 'w').write(table)
 
