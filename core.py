@@ -2,7 +2,7 @@ import random
 from collections import defaultdict, Counter
 from math import log
 import typing
-from typing import Dict
+from typing import Dict, Set
 
 
 def check_guess(guess: str, solution: str):
@@ -88,9 +88,9 @@ def print_pool(solutions, size):
         return f"{len(solutions)} remaining"
 
 
-def get_source(source):
+def get_source(source) -> typing.Set[str]:
     def get_words(file):
-        return open(file).read().strip().split("\n")
+        return set(open(file).read().strip().split("\n"))
     try:
         guesses = solutions = get_words(f"data/{source}.words.txt")
     except FileNotFoundError:
@@ -105,7 +105,11 @@ class Solver:
         self.guesses, self.solutions = get_source(source)
         self.method = method
         self.first = self.second = None
-        self.length = len(self.solutions[0])
+        if not self.solutions:
+            raise ValueError("Can't play with empty dictionary.")
+        if not self.solutions <= self.guesses:
+            raise ValueError("Targets must be a subset of valid guesses.")
+        self.length = len(next(iter(self.solutions)))
 
         if not skip_lookup:
             try:
