@@ -141,6 +141,9 @@ class Solver:
             raise ValueError(f"Answer must be {self.length} digits, or {self.length} letters and {self.length} digits.")
 
     def solve(self, solution: str = None, pool=-1):
+        if solution not in self.solutions:
+            raise ValueError(f"Solution {solution} is not in target list.")
+
         guesses = []
         solutions = self.solutions
 
